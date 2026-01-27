@@ -1,0 +1,35 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "sttts-skills",
+  "description": "Stefan Schimanski's Claude Code skills",
+  "owner": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  },
+  "plugins": [
+    {
+      "name": "beads",
+      "description": "Beads issue tracking workflow integration for Claude Code",
+      "version": "0.1.0",
+      "author": {
+        "name": "Stefan Schimanski",
+        "url": "https://github.com/sttts"
+      },
+      "source": "./plugins/beads",
+      "category": "productivity",
+      "homepage": "https://github.com/sttts/skills"
+    },
+    {
+      "name": "worktree",
+      "description": "Git worktree management for Claude Code",
+      "version": "0.1.0",
+      "author": {
+        "name": "Stefan Schimanski",
+        "url": "https://github.com/sttts"
+      },
+      "source": "./plugins/worktree",
+      "category": "productivity",
+      "homepage": "https://github.com/sttts/skills"
+    }
+  ]
+}

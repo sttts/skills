@@ -1,0 +1,8 @@
+{
+  "name": "worktree",
+  "description": "Git worktree workflow rules for Claude Code",
+  "author": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  }
+}
