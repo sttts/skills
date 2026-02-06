@@ -1,0 +1,1 @@
+{"version":1,"timestamp":"2026-02-06T12:45:00Z","prompt":"Split worktree plugin into pure worktree knowledge skill (auto-triggered) and opinionated worktree-workflow skill (explicit load only via /worktree-workflow)."}
