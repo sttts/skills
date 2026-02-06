@@ -1,7 +1,7 @@
 ---
 name: worktree
 description: "Git worktree commands and usage. Triggers on 'worktree', 'worktrees', 'create worktree', 'git worktree'."
-version: 0.2.3
+version: 0.2.4
 ---
 
 # Git Worktrees
