@@ -9,13 +9,13 @@ Claude Code skills for local issue tracking with [beads](https://github.com/sttt
 /plugin marketplace add https://github.com/sttts/skills.git
 
 # Install plugins
-/plugin install beads
-/plugin install worktree
+/plugin install sttts-beads
+/plugin install sttts-worktree
 ```
 
 ## Plugins
 
-### Beads Issue Tracking
+### sttts-beads
 
 Local issue tracking workflow integration using the [beads](https://github.com/sttts/beads) CLI.
 
@@ -59,27 +59,40 @@ When ending a session, the skill ensures:
 5. Label tasks with PR/MR URLs
 6. Add handoff comments for the next agent
 
-### Git Worktree Rules
+### sttts-worktree
 
-Git worktree management guidance for isolated branch work.
+Git worktree management with three skills:
 
-**Triggers on:** `worktree`, `worktrees`, `create worktree`, or working in a separate branch directory
+#### `/sttts-worktree:worktree` (auto-triggered)
 
-#### Rules
+Git worktree commands and usage reference.
 
-- Create worktrees inside `.git/checkouts/` directory
-- Never leave a worktree once working in it
+**Triggers on:** `worktree`, `worktrees`, `create worktree`, `git worktree`
+
+#### `/sttts-worktree:worktree-workflow` (explicit only)
+
+Opinionated workflow using `.git/checkouts/` convention. Must be loaded explicitly.
+
+- Create worktrees inside `.git/checkouts/`
+- Stay in the worktree - don't cd back to main
 - Never touch main when working in a worktree
-- Never delete a worktree before confirming content is merged
-- Never mark a task as completed until the branch is merged
+- Never delete before confirming merge
 
-#### Usage with Beads
-
-Every epic should have a dedicated worktree:
-
+Enable per-repo:
 ```bash
-bd worktree create .git/checkouts/<branch-name>
+git config --local claude.worktrees true
 ```
+
+#### `/sttts-worktree:prune-worktrees` (auto-triggered)
+
+Clean up worktrees whose branches have been merged. Works with both GitLab (`glab`) and GitHub (`gh`).
+
+**Triggers on:** `prune worktrees`, `cleanup worktrees`, `remove merged worktrees`
+
+- Detects GitLab or GitHub from remote URL
+- Checks each worktree branch for merged MR/PR
+- Shows dirty/merged/unmerged status
+- Asks for confirmation before removing
 
 ## Usage Examples
 
@@ -96,14 +109,18 @@ Add task: Implement user authentication
 # Create a worktree for an epic
 Create a worktree for the auth-refactor epic
 
+# Clean up merged worktrees
+/prune-worktrees
+
 # End a session
 Land the plane
 ```
 
 ## Requirements
 
-- [beads CLI](https://github.com/sttts/beads) installed and configured
-- Git repository with worktree support
+- [beads CLI](https://github.com/sttts/beads) installed and configured (for sttts-beads)
+- `glab` or `gh` CLI installed (for sttts-worktree prune)
+- Git repository
 
 ## License
 
