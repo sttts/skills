@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "sttts-skills",
+  "name": "sttts",
   "description": "Stefan Schimanski's Claude Code skills",
   "owner": {
     "name": "Stefan Schimanski",
