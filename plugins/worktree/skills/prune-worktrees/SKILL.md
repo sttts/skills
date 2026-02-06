@@ -1,7 +1,7 @@
 ---
 name: prune-worktrees
 description: "Clean up worktrees for merged branches. Triggers on 'prune worktrees', 'cleanup worktrees', 'remove merged worktrees'."
-version: 0.2.2
+version: 0.2.3
 ---
 
 # Prune Worktrees
@@ -39,7 +39,7 @@ For each worktree in `.git/checkouts/`:
 
 1. Get the branch name from the worktree
 2. Check if a merged MR/PR exists for that branch:
-   - **GitLab:** `glab mr list --state merged --source-branch <branch>`
+   - **GitLab:** `glab mr list --merged --source-branch <branch>`
    - **GitHub:** `gh pr list --state merged --head <branch>`
 3. If merged, mark for cleanup
 
@@ -133,7 +133,7 @@ for dir in "$WORKTREES_DIR"/*/; do
 
   # Check if branch has merged MR/PR
   if [[ "$CLI" == "glab" ]]; then
-    merged=$($CLI mr list --state merged --source-branch "$branch" 2>/dev/null | head -1)
+    merged=$($CLI mr list --merged --source-branch "$branch" 2>/dev/null | head -1)
   else
     merged=$($CLI pr list --state merged --head "$branch" 2>/dev/null | head -1)
   fi
