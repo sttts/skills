@@ -1,7 +1,7 @@
 ---
 name: prune-worktrees
 description: "Clean up worktrees for merged branches. Triggers on 'prune worktrees', 'cleanup worktrees', 'remove merged worktrees'."
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Prune Worktrees
