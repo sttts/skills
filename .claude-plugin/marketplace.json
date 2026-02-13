@@ -30,6 +30,18 @@
       "source": "./plugins/worktree",
       "category": "productivity",
       "homepage": "https://github.com/sttts/skills"
+    },
+    {
+      "name": "sttts-prompt-recording",
+      "description": "Record prompts to git notes and MR/PR descriptions",
+      "version": "0.2.4",
+      "author": {
+        "name": "Stefan Schimanski",
+        "url": "https://github.com/sttts"
+      },
+      "source": "./plugins/prompt-recording",
+      "category": "productivity",
+      "homepage": "https://github.com/sttts/skills"
     }
   ]
 }

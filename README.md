@@ -1,6 +1,6 @@
 # Skills for Claude Code
 
-Claude Code skills for local issue tracking with [beads](https://github.com/sttts/beads) and git worktree management.
+Claude Code skills for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, and prompt recording.
 
 ## Installation
 
@@ -11,6 +11,7 @@ Claude Code skills for local issue tracking with [beads](https://github.com/sttt
 # Install plugins
 /plugin install sttts-beads
 /plugin install sttts-worktree
+/plugin install sttts-prompt-recording
 ```
 
 ## Plugins
@@ -94,6 +95,32 @@ Clean up worktrees whose branches have been merged. Works with both GitLab (`gla
 - Shows dirty/merged/unmerged status
 - Asks for confirmation before removing
 
+### sttts-prompt-recording
+
+Record cleaned-up prompts attached to commits (via git notes) and MR/PR descriptions.
+
+**Triggers on:** `record prompt`, `prompt recording`, `log prompts`
+
+#### Features
+
+- **Git notes** (`refs/notes/prompts`) - Per-commit prompt history in structured JSON
+- **MR/PR description** - High-level "Prompt Documentation" section summarizing the whole conversation
+- **Sticky opt-in** - Enable per-repo with `git config --local claude.promptRecording true`
+- **Dual platform** - Works with both GitLab (`glab`) and GitHub (`gh`)
+
+#### Prompt Philosophy
+
+- Record **what the user actually asked for**, not what the agent decided
+- Write prompts as **actionable instructions** that could reproduce the result
+- Capture **architecture constraints** and **rejections** - these explain WHY
+- Add context lines after each prompt explaining what it changed
+
+#### Enable per-repo
+
+```bash
+git config --local claude.promptRecording true
+```
+
 ## Usage Examples
 
 ```
@@ -111,6 +138,9 @@ Create a worktree for the auth-refactor epic
 
 # Clean up merged worktrees
 /prune-worktrees
+
+# Enable prompt recording
+/prompt-recording
 
 # End a session
 Land the plane
