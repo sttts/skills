@@ -180,6 +180,14 @@ Write an actionable prompt that could be given to another agent to achieve the s
 - `"Implemented retry logic for better resilience"` (this is a summary, not a prompt)
 - `"Fixed the bug"` (not actionable)
 
+**Anti-pattern - embedding the agent's solution in the prompt:**
+- Bad: `"Add --platform linux/amd64 to the docker build command so it works on Apple Silicon Macs"`
+  The user never said `--platform linux/amd64` - the agent figured that out. This rewrites the user's problem as an instruction containing the agent's solution.
+- Good: `"docker pull of actuator-base:2.3.5 fails with 'no matching manifest for linux/arm64/v8' on Mac. This is used in the terraform-mock Dockerfile for tilt. What can we do?"`
+  The user's actual problem statement, preserving that the solution came from the agent.
+
+**The test:** Could you attribute this prompt to the user with a straight face? If the user never said those words or that solution, don't put it in their mouth.
+
 ### For MR/PR Description
 
 **Only record what the user actually said.** Do NOT invent prompts for things the agent decided on its own.
