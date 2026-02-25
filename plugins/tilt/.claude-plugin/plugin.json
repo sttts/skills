@@ -1,0 +1,9 @@
+{
+  "name": "sttts-tilt",
+  "description": "Tilt local development and e2e testing for Claude Code",
+  "version": "0.1.0",
+  "author": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  }
+}
