@@ -1,7 +1,7 @@
 ---
 name: tilt
 description: "Tilt local development and e2e testing. Triggers on tilt, kind cluster, e2e tests, test/tilt, local dev cluster."
-version: 0.1.0
+version: 0.2.4
 ---
 
 # Tilt Local Development
