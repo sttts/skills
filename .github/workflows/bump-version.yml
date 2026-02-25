@@ -1,0 +1,52 @@
+name: Bump Version
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    # skip version bump commits
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Configure git
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+      - name: Bump version
+        run: |
+          # get current version
+          VERSION=$(jq -r '.plugins[0].version' .claude-plugin/marketplace.json)
+
+          # parse and bump patch version
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+          PATCH=$(echo $VERSION | cut -d. -f3)
+          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+
+          echo "Bumping version: $VERSION -> $NEW_VERSION"
+
+          # update all version files across all plugins
+          sed -i "s/$VERSION/$NEW_VERSION/g" \
+            .claude-plugin/marketplace.json \
+            plugins/*/.claude-plugin/plugin.json \
+            plugins/*/skills/*/SKILL.md
+
+          # commit and push
+          git add \
+            .claude-plugin/marketplace.json \
+            plugins/*/.claude-plugin/plugin.json \
+            plugins/*/skills/*/SKILL.md
+          git commit -m "skills: bump version to $NEW_VERSION [skip ci]"
+          git push
+
+          # tag and push tag
+          git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
+          git push origin "v$NEW_VERSION"
