@@ -1,7 +1,7 @@
 {
   "name": "sttts-worktree",
   "description": "Git worktree management for Claude Code",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "author": {
     "name": "Stefan Schimanski",
     "url": "https://github.com/sttts"

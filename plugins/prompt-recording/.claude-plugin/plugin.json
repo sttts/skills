@@ -1,7 +1,7 @@
 {
   "name": "sttts-prompt-recording",
   "description": "Record prompts to git notes and MR/PR descriptions",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "author": {
     "name": "Stefan Schimanski",
     "url": "https://github.com/sttts"

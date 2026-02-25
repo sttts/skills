@@ -1,7 +1,7 @@
 ---
 name: Beads Issue Tracking
 description: This skill should be used when the user mentions "bd", "beads", "what's next", "add task", "add epic", or asks about issue tracking. First check if a .beads directory exists in the project - if not, this skill does not apply.
-version: 0.2.4
+version: 0.2.5
 ---
 
 # Beads Issue Tracking
