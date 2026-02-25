@@ -10,7 +10,7 @@
     {
       "name": "sttts-beads",
       "description": "Beads issue tracking workflow integration for Claude Code",
-      "version": "0.1.0",
+      "version": "0.2.4",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
@@ -40,6 +40,18 @@
         "url": "https://github.com/sttts"
       },
       "source": "./plugins/prompt-recording",
+      "category": "productivity",
+      "homepage": "https://github.com/sttts/skills"
+    },
+    {
+      "name": "sttts-tilt",
+      "description": "Tilt local development and e2e testing for Claude Code",
+      "version": "0.2.4",
+      "author": {
+        "name": "Stefan Schimanski",
+        "url": "https://github.com/sttts"
+      },
+      "source": "./plugins/tilt",
       "category": "productivity",
       "homepage": "https://github.com/sttts/skills"
     }
