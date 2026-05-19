@@ -1,0 +1,390 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  codex-worktree [codex args...]
+  codex-worktree --worktree [name] [codex args...]
+  codex-worktree -w [name] [codex args...]
+
+Adds a Claude-style --worktree flag to Codex.
+
+Without --worktree, this wrapper execs Codex unchanged. With --worktree, it:
+  - creates .codex/worktrees/<name> at the current git repo root
+  - creates or checks out branch <name>
+  - bases new branches on origin/HEAD when available, otherwise HEAD
+  - starts Codex in the worktree
+  - asks whether to keep or delete the worktree and branch when Codex exits
+
+Set CODEX_BIN to override the Codex executable.
+USAGE
+}
+
+die() {
+  printf 'codex-worktree: %s\n' "$*" >&2
+  exit 1
+}
+
+info() {
+  printf 'codex-worktree: %s\n' "$*" >&2
+}
+
+realpath_for() {
+  local target=$1
+  local dir
+  local base
+
+  dir=$(cd "$(dirname "$target")" && pwd -P)
+  base=$(basename "$target")
+  printf '%s/%s\n' "$dir" "$base"
+}
+
+find_codex() {
+  if [[ -n "${CODEX_BIN:-}" ]]; then
+    printf '%s\n' "$CODEX_BIN"
+    return
+  fi
+
+  command -v codex || die "codex executable not found; set CODEX_BIN"
+}
+
+generate_name() {
+  local adjectives=(bright calm clear fresh steady swift quiet vivid)
+  local actions=(building coding drafting fixing shaping testing)
+  local objects=(branch change patch plan task work)
+  local a b c suffix
+
+  a=${adjectives[$((RANDOM % ${#adjectives[@]}))]}
+  b=${actions[$((RANDOM % ${#actions[@]}))]}
+  c=${objects[$((RANDOM % ${#objects[@]}))]}
+  suffix=$(date +%H%M%S)
+  printf '%s-%s-%s-%s\n' "$a" "$b" "$c" "$suffix"
+}
+
+parse_args() {
+  worktree_requested=0
+  worktree_name=""
+  codex_args=()
+
+  while (($#)); do
+    case "$1" in
+      --help)
+        usage
+        exit 0
+        ;;
+      --worktree)
+        worktree_requested=1
+        shift
+        if (($#)) && [[ "$1" != -* ]]; then
+          worktree_name=$1
+          shift
+        fi
+        ;;
+      --worktree=*)
+        worktree_requested=1
+        worktree_name=${1#--worktree=}
+        shift
+        ;;
+      -w)
+        worktree_requested=1
+        shift
+        if (($#)) && [[ "$1" != -* ]]; then
+          worktree_name=$1
+          shift
+        fi
+        ;;
+      -w?*)
+        worktree_requested=1
+        worktree_name=${1#-w}
+        shift
+        ;;
+      --)
+        shift
+        while (($#)); do
+          codex_args+=("$1")
+          shift
+        done
+        ;;
+      *)
+        codex_args+=("$1")
+        shift
+        ;;
+    esac
+  done
+}
+
+repo_root() {
+  git rev-parse --show-toplevel 2>/dev/null || return 1
+}
+
+validate_name() {
+  local name=$1
+
+  [[ -n "$name" ]] || die "worktree name must not be empty"
+  [[ "$name" != /* ]] || die "worktree name must be relative"
+  [[ "$name" != -* ]] || die "worktree name must not start with '-'"
+  [[ "$name" != *".."* ]] || die "worktree name must not contain '..'"
+}
+
+default_base_ref() {
+  local root=$1
+  local origin_head
+
+  if git -C "$root" show-ref --verify --quiet refs/remotes/origin/HEAD; then
+    origin_head=$(git -C "$root" symbolic-ref --quiet --short refs/remotes/origin/HEAD || true)
+    if [[ -n "$origin_head" ]]; then
+      printf '%s\n' "$origin_head"
+      return
+    fi
+  fi
+
+  printf 'HEAD\n'
+}
+
+try_github_pr_state() {
+  local root=$1
+  local branch=$2
+  local state
+
+  command -v gh >/dev/null || return 1
+  state=$(cd "$root" && GH_PROMPT_DISABLED=1 gh pr view "$branch" --json state,mergedAt --jq 'if (.state == "MERGED") or (.mergedAt != null) then "merged" elif (.state == "OPEN") or (.state == "CLOSED") then "not_merged" else "unknown" end' 2>/dev/null || true)
+
+  [[ "$state" == "merged" || "$state" == "not_merged" ]] || return 1
+  printf '%s\n' "$state"
+}
+
+try_gitlab_mr_state() {
+  local root=$1
+  local branch=$2
+  local json compact
+
+  command -v glab >/dev/null || return 1
+  json=$(cd "$root" && GLAB_CHECK_UPDATE=false glab mr view "$branch" --output json 2>/dev/null || true)
+  compact=$(printf '%s' "$json" | tr -d '[:space:]')
+
+  case "$compact" in
+    *'"state":"merged"'*|*'"state":"MERGED"'*)
+      printf 'merged\n'
+      ;;
+    *'"state":"opened"'*|*'"state":"open"'*|*'"state":"OPEN"'*|*'"state":"closed"'*|*'"state":"CLOSED"'*)
+      printf 'not_merged\n'
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+hosted_pr_state() {
+  local root=$1
+  local branch=$2
+  local remote_url state
+
+  remote_url=$(git -C "$root" config --get remote.origin.url || true)
+
+  case "$remote_url" in
+    *github*)
+      state=$(try_github_pr_state "$root" "$branch" || true)
+      ;;
+    *gitlab*)
+      state=$(try_gitlab_mr_state "$root" "$branch" || true)
+      ;;
+    *)
+      state=""
+      ;;
+  esac
+
+  [[ -n "$state" ]] || return 1
+  printf '%s\n' "$state"
+}
+
+branch_merge_state() {
+  local root=$1
+  local branch=$2
+  local base_ref=$3
+  local state
+
+  state=$(hosted_pr_state "$root" "$branch" || true)
+  if [[ -n "$state" ]]; then
+    printf '%s\n' "$state"
+    return
+  fi
+
+  if git -C "$root" merge-base --is-ancestor "$branch" "$base_ref" 2>/dev/null; then
+    printf 'merged\n'
+  else
+    printf 'not_merged\n'
+  fi
+}
+
+copy_worktree_includes() {
+  local root=$1
+  local worktree_path=$2
+  local include_file=$root/.worktreeinclude
+  local tmp_dir ignored_list included_list rel src dst dst_dir
+
+  [[ -f "$include_file" ]] || return 0
+
+  tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/codex-worktree.XXXXXX")
+  ignored_list=$tmp_dir/gitignored
+  included_list=$tmp_dir/included
+
+  git -C "$root" ls-files --others --ignored --exclude-standard | LC_ALL=C sort >"$ignored_list"
+  git -C "$root" ls-files --others --ignored --exclude-from="$include_file" | LC_ALL=C sort >"$included_list"
+
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] || continue
+
+    src=$root/$rel
+    dst=$worktree_path/$rel
+    dst_dir=$(dirname "$dst")
+
+    [[ -f "$src" || -L "$src" ]] || continue
+    mkdir -p "$dst_dir"
+    cp -p "$src" "$dst"
+  done < <(comm -12 "$ignored_list" "$included_list")
+
+  rm -rf "$tmp_dir"
+}
+
+worktree_has_changes() {
+  local worktree_path=$1
+
+  [[ -n "$(git -C "$worktree_path" status --porcelain --untracked-files=all)" ]]
+}
+
+cleanup_worktree() {
+  local root=$1
+  local worktree_path=$2
+  local branch=$3
+  local force=${4:-}
+
+  if [[ "$force" == "force" ]]; then
+    git -C "$root" worktree remove --force "$worktree_path" >/dev/null
+  else
+    git -C "$root" worktree remove "$worktree_path" >/dev/null
+  fi
+
+  git -C "$root" branch -D "$branch" >/dev/null
+}
+
+maybe_cleanup() {
+  local root=$1
+  local worktree_path=$2
+  local branch=$3
+  local base_ref=$4
+  local exit_code=$5
+  local answer delete_default force merge_state prompt status_suffix
+
+  merge_state=$(branch_merge_state "$root" "$branch" "$base_ref")
+  delete_default=0
+  force=""
+
+  if worktree_has_changes "$worktree_path"; then
+    force=force
+    status_suffix="local changes present"
+  else
+    status_suffix="no local changes"
+    if [[ "$merge_state" == "merged" ]]; then
+      delete_default=1
+    fi
+  fi
+
+  info "PR/branch merge check for $branch against $base_ref: $merge_state; $status_suffix"
+
+  if [[ "$delete_default" -eq 1 ]]; then
+    prompt="Delete worktree and branch '$branch'? [Y/n] "
+  else
+    prompt="Delete worktree and branch '$branch'? [y/N] "
+  fi
+
+  if [[ -t 0 && -t 1 ]]; then
+    printf 'codex-worktree: %s' "$prompt" >&2
+    read -r answer || answer=
+  else
+    answer=""
+  fi
+
+  case "$answer" in
+    y|Y|yes|YES|Yes)
+      cleanup_worktree "$root" "$worktree_path" "$branch" "$force"
+      info "removed worktree $worktree_path and branch $branch"
+      ;;
+    n|N|no|NO|No)
+      info "kept worktree $worktree_path on branch $branch"
+      ;;
+    "")
+      if [[ "$delete_default" -eq 1 ]]; then
+        cleanup_worktree "$root" "$worktree_path" "$branch" "$force"
+        info "removed worktree $worktree_path and branch $branch"
+      else
+        info "kept worktree $worktree_path on branch $branch"
+      fi
+      ;;
+    *)
+      info "kept worktree $worktree_path on branch $branch"
+      ;;
+  esac
+
+  return "$exit_code"
+}
+
+run_in_worktree() {
+  local codex_bin=$1
+  local root name branch worktree_path base_ref actual_branch exit_code
+
+  root=$(repo_root) || die "--worktree requires a git repository"
+  name=${worktree_name:-$(generate_name)}
+  validate_name "$name"
+
+  branch=$name
+  git -C "$root" check-ref-format --branch "$branch" >/dev/null || die "invalid branch name: $branch"
+
+  base_ref=$(default_base_ref "$root")
+  worktree_path=$root/.codex/worktrees/$name
+
+  if [[ -d "$worktree_path/.git" || -f "$worktree_path/.git" ]]; then
+    actual_branch=$(git -C "$worktree_path" branch --show-current)
+    [[ "$actual_branch" == "$branch" ]] || die "existing worktree is on branch '$actual_branch', expected '$branch'"
+    info "using existing worktree $worktree_path"
+  elif [[ -e "$worktree_path" ]]; then
+    die "target exists but is not a git worktree: $worktree_path"
+  else
+    mkdir -p "$(dirname "$worktree_path")"
+    if git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
+      git -C "$root" worktree add "$worktree_path" "$branch" >/dev/null
+    else
+      git -C "$root" worktree add -b "$branch" "$worktree_path" "$base_ref" >/dev/null
+    fi
+
+    copy_worktree_includes "$root" "$worktree_path"
+    info "created $worktree_path on branch $branch from $base_ref"
+  fi
+
+  set +e
+  (
+    cd "$worktree_path"
+    "$codex_bin" "${codex_args[@]}"
+  )
+  exit_code=$?
+  set -e
+
+  maybe_cleanup "$root" "$worktree_path" "$branch" "$base_ref" "$exit_code"
+}
+
+main() {
+  local codex_bin
+
+  parse_args "$@"
+  codex_bin=$(find_codex)
+  codex_bin=$(realpath_for "$codex_bin")
+
+  if [[ "$worktree_requested" -eq 0 ]]; then
+    exec "$codex_bin" "${codex_args[@]}"
+  fi
+
+  run_in_worktree "$codex_bin"
+}
+
+main "$@"

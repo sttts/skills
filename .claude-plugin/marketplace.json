@@ -54,6 +54,18 @@
       "source": "./plugins/tilt",
       "category": "productivity",
       "homepage": "https://github.com/sttts/skills"
+    },
+    {
+      "name": "sttts-cmux-codex",
+      "description": "Launch and manage Codex cmux subagents",
+      "version": "0.2.5",
+      "author": {
+        "name": "Stefan Schimanski",
+        "url": "https://github.com/sttts"
+      },
+      "source": "./plugins/cmux-codex",
+      "category": "productivity",
+      "homepage": "https://github.com/sttts/skills"
     }
   ]
 }

@@ -1,0 +1,376 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+STATE_DIR="${CMUX_CODEX_STATE_DIR:-${HOME}/.codex/cmux-codex/subagents}"
+CODEX_WORKTREE_DEFAULT="${SCRIPT_DIR}/codex-worktree"
+DEFAULT_STATUS_PROMPT='Status request from the parent Codex session. Reply concisely with: current state, blockers, files changed, tests/checks run, and next action. Do not start unrelated new work.'
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  cmux-codex column --branch sttts-name --base origin/main -- <prompt>
+  cmux-codex status [sttts-name] [--message <text>]
+  cmux-codex tail [sttts-name] [-n <lines>]
+  cmux-codex focus [sttts-name]
+  cmux-codex close [sttts-name]
+  cmux-codex list
+
+Column options:
+  --branch NAME          Required branch name; must start with sttts-
+  --base REF             Required base ref for new branches, e.g. origin/main
+  --direction DIR        cmux split direction: right, left, up, down (default: right)
+  --workspace REF        cmux workspace ref/id (default: caller workspace)
+  --model MODEL          Forward --model to codex-worktree/codex
+  --profile PROFILE      Forward --profile to codex-worktree/codex
+  --sandbox MODE         Forward --sandbox to codex-worktree/codex
+  --add-dir DIR          Forward --add-dir to codex-worktree/codex (repeatable)
+  --cmux-bin PATH        cmux binary to run (default: CMUX_BIN or cmux)
+  --worktree-bin PATH    codex-worktree wrapper (default: bundled scripts/codex-worktree)
+  --no-focus             Restore focus to the original pane after launch
+  --dry-run              Preview without fetch/branch/cmux actions
+
+Status options:
+  --message TEXT         Custom status prompt
+  --cmux-bin PATH        cmux binary to run
+
+Tail options:
+  -n, --lines N          Read last N lines (default: 120)
+  --cmux-bin PATH        cmux binary to run
+USAGE
+}
+
+die() {
+  printf 'cmux-codex: %s\n' "$*" >&2
+  exit 1
+}
+
+shell_quote() {
+  python3 -c 'import shlex, sys; print(shlex.quote(sys.argv[1]))' "$1"
+}
+
+json_get() {
+  local field_path="$1"
+  python3 -c 'import json, sys
+path = sys.argv[1].split(".")
+data = json.load(sys.stdin)
+for key in path:
+    if not isinstance(data, dict):
+        print("")
+        raise SystemExit
+    data = data.get(key, "")
+print(data if isinstance(data, str) else "")' "$field_path"
+}
+
+repo_root() {
+  git rev-parse --show-toplevel 2>/dev/null || return 1
+}
+
+validate_branch() {
+  local branch="$1"
+  [[ -n "$branch" ]] || die "--branch is required"
+  [[ "$branch" == sttts-* ]] || die "branch must start with sttts-: $branch"
+  git check-ref-format --branch "$branch" >/dev/null || die "invalid branch name: $branch"
+}
+
+ensure_command() {
+  local cmd="$1" label="$2"
+  command -v "$cmd" >/dev/null 2>&1 || die "$label not found: $cmd"
+}
+
+state_file() {
+  local branch="$1"
+  printf '%s/%s.json' "$STATE_DIR" "$branch"
+}
+
+latest_state_file() {
+  [[ -d "$STATE_DIR" ]] || return 0
+  find "$STATE_DIR" -maxdepth 1 -name 'sttts-*.json' -type f -print 2>/dev/null | while IFS= read -r path; do
+    [[ -n "$path" ]] || continue
+    printf '%s\t%s\n' "$(stat -f %m "$path" 2>/dev/null || stat -c %Y "$path")" "$path"
+  done | sort -n | tail -1 | cut -f2-
+}
+
+resolve_state() {
+  local branch="${1:-}"
+  local file
+  if [[ -n "$branch" ]]; then
+    validate_branch "$branch"
+    file="$(state_file "$branch")"
+  else
+    file="$(latest_state_file || true)"
+  fi
+  [[ -n "${file:-}" && -f "$file" ]] || die "no tracked cmux subagent found${branch:+ for $branch}"
+  printf '%s\n' "$file"
+}
+
+write_state() {
+  local branch="$1" base="$2" repo="$3" workspace="$4" surface="$5" pane="$6" prompt="$7"
+  mkdir -p "$STATE_DIR"
+  python3 -c 'import json, os, sys, time
+branch, base, repo, workspace, surface, pane, prompt, state_dir = sys.argv[1:]
+data = {
+  "branch": branch,
+  "base": base,
+  "repo": repo,
+  "workspace_ref": workspace,
+  "surface_ref": surface,
+  "pane_ref": pane,
+  "prompt": prompt,
+  "state": "running",
+  "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+}
+os.makedirs(state_dir, exist_ok=True)
+with open(os.path.join(state_dir, branch + ".json"), "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")' "$branch" "$base" "$repo" "$workspace" "$surface" "$pane" "$prompt" "$STATE_DIR"
+}
+
+mark_closed() {
+  local file="$1"
+  python3 -c 'import json, sys, time
+path = sys.argv[1]
+with open(path, encoding="utf-8") as f:
+    data = json.load(f)
+data["state"] = "closing"
+data["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")' "$file"
+}
+
+cmd_column() {
+  local branch="" base="" direction="right" workspace="" cmux_bin="${CMUX_BIN:-cmux}"
+  local worktree_bin="${CODEX_WORKTREE_BIN:-$CODEX_WORKTREE_DEFAULT}"
+  local model="" profile="" sandbox="" restore_focus=false dry_run=false
+  local add_dirs=() prompt_parts=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --branch) branch="${2:-}"; shift 2 ;;
+      --base) base="${2:-}"; shift 2 ;;
+      --direction) direction="${2:-}"; shift 2 ;;
+      --workspace) workspace="${2:-}"; shift 2 ;;
+      --model) model="${2:-}"; shift 2 ;;
+      --profile) profile="${2:-}"; shift 2 ;;
+      --sandbox) sandbox="${2:-}"; shift 2 ;;
+      --add-dir) add_dirs+=("${2:-}"); shift 2 ;;
+      --cmux-bin) cmux_bin="${2:-}"; shift 2 ;;
+      --worktree-bin) worktree_bin="${2:-}"; shift 2 ;;
+      --no-focus) restore_focus=true; shift ;;
+      --dry-run) dry_run=true; shift ;;
+      --) shift; prompt_parts+=("$@"); break ;;
+      -h|--help) usage; exit 0 ;;
+      --*) die "unknown column option: $1" ;;
+      *) prompt_parts+=("$1"); shift ;;
+    esac
+  done
+
+  validate_branch "$branch"
+  [[ -n "$base" ]] || die "--base is required, e.g. --base origin/main"
+  case "$direction" in right|left|up|down) ;; *) die "invalid direction: $direction" ;; esac
+
+  local prompt="${prompt_parts[*]}"
+  [[ -n "${prompt//[[:space:]]/}" ]] || die "prompt is required after --"
+
+  ensure_command "$cmux_bin" cmux
+  [[ -x "$worktree_bin" ]] || die "codex-worktree wrapper is not executable: $worktree_bin"
+
+  local root
+  root="$(repo_root)" || die "column requires a git repository"
+
+  if [[ "$dry_run" == true ]]; then
+    echo "Would run: git -C $(shell_quote "$root") fetch origin"
+    if git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
+      echo "Would reuse local branch: $branch"
+    elif git -C "$root" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+      echo "Would create local branch $branch from origin/$branch"
+    else
+      echo "Would create local branch $branch from $base"
+    fi
+    echo "Would open cmux column: $direction"
+    echo "Would launch: $worktree_bin -w $branch -- <prompt>"
+    echo "Would close cmux surface after codex-worktree exits"
+    exit 0
+  fi
+
+  git -C "$root" fetch origin
+  git -C "$root" rev-parse --verify --quiet "$base^{commit}" >/dev/null || die "base ref does not resolve to a commit: $base"
+
+  if git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
+    :
+  elif git -C "$root" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    git -C "$root" branch "$branch" "origin/$branch" >/dev/null
+  else
+    git -C "$root" branch "$branch" "$base" >/dev/null
+  fi
+
+  local prompt_file
+  prompt_file="${TMPDIR:-/tmp}/cmux-codex-${branch}-$$-${RANDOM}.prompt"
+  printf '%s' "$prompt" > "$prompt_file"
+
+  local cmd
+  cmd="prompt=\$(cat $(shell_quote "$prompt_file")); rm -f $(shell_quote "$prompt_file"); cd $(shell_quote "$root") && $(shell_quote "$worktree_bin") -w $(shell_quote "$branch")"
+  if [[ -n "$model" ]]; then cmd+=" --model $(shell_quote "$model")"; fi
+  if [[ -n "$profile" ]]; then cmd+=" --profile $(shell_quote "$profile")"; fi
+  if [[ -n "$sandbox" ]]; then cmd+=" --sandbox $(shell_quote "$sandbox")"; fi
+  for dir in "${add_dirs[@]}"; do cmd+=" --add-dir $(shell_quote "$dir")"; done
+  cmd+=" -- \"\$prompt\""
+
+  local workspace_args=()
+  if [[ -n "$workspace" ]]; then workspace_args=(--workspace "$workspace"); fi
+
+  local before_json old_pane
+  before_json="$($cmux_bin identify "${workspace_args[@]}" 2>/dev/null || true)"
+  old_pane=""
+  if [[ -n "$before_json" ]]; then
+    old_pane="$(printf '%s\n' "$before_json" | json_get focused.pane_ref)"
+  fi
+
+  $cmux_bin new-pane --type terminal --direction "$direction" --focus true "${workspace_args[@]}" >/dev/null
+  sleep 0.35
+
+  local after_json new_surface new_workspace new_pane
+  after_json="$($cmux_bin identify "${workspace_args[@]}")"
+  new_surface="$(printf '%s\n' "$after_json" | json_get focused.surface_ref)"
+  new_workspace="$(printf '%s\n' "$after_json" | json_get focused.workspace_ref)"
+  new_pane="$(printf '%s\n' "$after_json" | json_get focused.pane_ref)"
+  [[ -n "$new_surface" && -n "$new_workspace" ]] || die "could not identify the new cmux surface"
+
+  cmd+="; cmux_codex_exit=\$?; $(shell_quote "$cmux_bin") close-surface --workspace $(shell_quote "$new_workspace") --surface $(shell_quote "$new_surface") >/dev/null 2>&1 || true; exit \$cmux_codex_exit"
+
+  $cmux_bin send --workspace "$new_workspace" --surface "$new_surface" "$cmd"
+  $cmux_bin send-key --workspace "$new_workspace" --surface "$new_surface" enter
+
+  write_state "$branch" "$base" "$root" "$new_workspace" "$new_surface" "$new_pane" "$prompt"
+
+  if [[ "$restore_focus" == true && -n "$old_pane" ]]; then
+    $cmux_bin focus-pane --pane "$old_pane" "${workspace_args[@]}" >/dev/null || true
+  fi
+
+  echo "Started cmux subagent"
+  echo "Branch: $branch"
+  echo "Base: $base"
+  echo "cmux workspace: $new_workspace"
+  echo "cmux surface: $new_surface"
+}
+
+cmd_status() {
+  local branch="" message="$DEFAULT_STATUS_PROMPT" cmux_bin="${CMUX_BIN:-cmux}"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --message) message="${2:-}"; shift 2 ;;
+      --cmux-bin) cmux_bin="${2:-}"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      --*) die "unknown status option: $1" ;;
+      *) branch="$1"; shift ;;
+    esac
+  done
+  ensure_command "$cmux_bin" cmux
+  local file workspace surface label
+  file="$(resolve_state "$branch")"
+  workspace="$(json_get workspace_ref < "$file")"
+  surface="$(json_get surface_ref < "$file")"
+  label="$(json_get branch < "$file")"
+  $cmux_bin send --workspace "$workspace" --surface "$surface" "$message"
+  $cmux_bin send-key --workspace "$workspace" --surface "$surface" enter
+  echo "Asked status from $label on $surface"
+}
+
+cmd_tail() {
+  local branch="" lines="120" cmux_bin="${CMUX_BIN:-cmux}"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -n|--lines) lines="${2:-}"; shift 2 ;;
+      --cmux-bin) cmux_bin="${2:-}"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      --*) die "unknown tail option: $1" ;;
+      *) branch="$1"; shift ;;
+    esac
+  done
+  ensure_command "$cmux_bin" cmux
+  local file workspace surface
+  file="$(resolve_state "$branch")"
+  workspace="$(json_get workspace_ref < "$file")"
+  surface="$(json_get surface_ref < "$file")"
+  $cmux_bin read-screen --workspace "$workspace" --surface "$surface" --lines "$lines"
+}
+
+cmd_focus() {
+  local branch="" cmux_bin="${CMUX_BIN:-cmux}"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --cmux-bin) cmux_bin="${2:-}"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      --*) die "unknown focus option: $1" ;;
+      *) branch="$1"; shift ;;
+    esac
+  done
+  ensure_command "$cmux_bin" cmux
+  local file workspace pane
+  file="$(resolve_state "$branch")"
+  workspace="$(json_get workspace_ref < "$file")"
+  pane="$(json_get pane_ref < "$file")"
+  $cmux_bin focus-pane --workspace "$workspace" --pane "$pane"
+}
+
+cmd_close() {
+  local branch="" cmux_bin="${CMUX_BIN:-cmux}"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --cmux-bin) cmux_bin="${2:-}"; shift 2 ;;
+      -h|--help) usage; exit 0 ;;
+      --*) die "unknown close option: $1" ;;
+      *) branch="$1"; shift ;;
+    esac
+  done
+  ensure_command "$cmux_bin" cmux
+  local file workspace surface label
+  file="$(resolve_state "$branch")"
+  workspace="$(json_get workspace_ref < "$file")"
+  surface="$(json_get surface_ref < "$file")"
+  label="$(json_get branch < "$file")"
+  $cmux_bin send-key --workspace "$workspace" --surface "$surface" ctrl+c || true
+  sleep 0.1
+  $cmux_bin send --workspace "$workspace" --surface "$surface" "/quit"
+  $cmux_bin send-key --workspace "$workspace" --surface "$surface" enter
+  mark_closed "$file" 2>/dev/null || echo "cmux-codex: warning: could not mark state as closing" >&2
+  echo "Requested graceful close for $label on $surface"
+  echo "The surface will close automatically after codex-worktree exits."
+}
+
+cmd_list() {
+  [[ -d "$STATE_DIR" ]] || return 0
+  STATE_DIR="$STATE_DIR" python3 -c 'import glob, json, os
+for path in sorted(glob.glob(os.path.join(os.environ["STATE_DIR"], "sttts-*.json")), key=os.path.getmtime):
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    print("\t".join([
+        data.get("branch", ""),
+        data.get("state", ""),
+        data.get("surface_ref", ""),
+        data.get("base", ""),
+        data.get("repo", ""),
+    ]))'
+}
+
+main() {
+  local action="${1:-}"
+  if [[ -z "$action" || "$action" == "-h" || "$action" == "--help" || "$action" == "help" ]]; then
+    usage
+    exit 0
+  fi
+  shift
+  case "$action" in
+    column) cmd_column "$@" ;;
+    status) cmd_status "$@" ;;
+    tail) cmd_tail "$@" ;;
+    screen) cmd_tail "$@" ;;
+    focus|attach) cmd_focus "$@" ;;
+    close) cmd_close "$@" ;;
+    list) cmd_list "$@" ;;
+    *) die "unknown action: $action" ;;
+  esac
+}
+
+main "$@"

@@ -1,6 +1,6 @@
 # Skills for Claude Code
 
-Claude Code skills for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, and prompt recording.
+Claude Code skills for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, and cmux Codex subagents.
 
 ## Installation
 
@@ -12,6 +12,7 @@ Claude Code skills for local issue tracking with [beads](https://github.com/sttt
 /plugin install sttts-beads
 /plugin install sttts-worktree
 /plugin install sttts-prompt-recording
+/plugin install sttts-cmux-codex
 ```
 
 ## Plugins
@@ -121,6 +122,19 @@ Record cleaned-up prompts attached to commits (via git notes) and MR/PR descript
 git config --local claude.promptRecording true
 ```
 
+### sttts-cmux-codex
+
+Launch and manage loosely coupled Codex subagents in cmux columns.
+
+**Triggers on:** `start cmux codex subagent`, `cmux codex session`, `codex cmux session`, launching a Codex subagent in cmux, or checking/tailing/focusing/closing a cmux subagent
+
+#### Features
+
+- Opens an independent Codex TUI session in a cmux column
+- Creates/reuses `.codex/worktrees/<branch>` via the bundled `codex-worktree` wrapper
+- Requires explicit `sttts-*` branch names and explicit base refs
+- Tracks launched sessions so agents can request status, tail output, focus, or close them
+
 ## Usage Examples
 
 ```
@@ -139,6 +153,9 @@ Create a worktree for the auth-refactor epic
 # Clean up merged worktrees
 /prune-worktrees
 
+# Start a Codex cmux subagent
+Start cmux codex subagent on branch sttts-investigate-foo to inspect issue #123
+
 # Enable prompt recording
 /prompt-recording
 
@@ -150,6 +167,7 @@ Land the plane
 
 - [beads CLI](https://github.com/sttts/beads) installed and configured (for sttts-beads)
 - `glab` or `gh` CLI installed (for sttts-worktree prune)
+- `cmux` and `codex` CLIs installed (for sttts-cmux-codex)
 - Git repository
 
 ## License
