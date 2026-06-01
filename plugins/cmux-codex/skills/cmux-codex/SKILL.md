@@ -1,7 +1,7 @@
 ---
 name: cmux-codex
 description: "Launch and manage loosely coupled cmux subagents: parallel interactive Codex sessions in cmux columns for user-given subtasks, using explicit sttts-* branches and the bundled codex-worktree wrapper. Use when the user says 'start cmux codex subagent', 'cmux codex session', 'codex cmux session', asks to launch a Codex subagent in cmux, or asks to start, check status, tail output, focus, or close a cmux subagent."
-version: 0.2.5
+version: 0.2.6
 ---
 
 # cmux Codex
