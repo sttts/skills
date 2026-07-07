@@ -42,25 +42,25 @@ def require_list(value: Any, field: str) -> list[Any]:
     return value
 
 
-def github_pr_changes_url(source_url: str) -> str:
-    """Normalize a GitHub pull-request URL to its current changes view."""
+def github_pr_files_url(source_url: str) -> str:
+    """Normalize a GitHub pull-request URL to its current files view."""
     parsed = urlsplit(source_url)
     if parsed.scheme not in {"http", "https"} or parsed.hostname not in {"github.com", "www.github.com"}:
         return ""
     match = re.fullmatch(r"/([^/]+)/([^/]+)/pull/(\d+)(?:/(?:files|changes))?/?", parsed.path)
     if not match:
         return ""
-    changes_path = f"/{match.group(1)}/{match.group(2)}/pull/{match.group(3)}/changes"
-    return urlunsplit((parsed.scheme, parsed.netloc, changes_path, "", ""))
+    files_path = f"/{match.group(1)}/{match.group(2)}/pull/{match.group(3)}/files"
+    return urlunsplit((parsed.scheme, parsed.netloc, files_path, "", ""))
 
 
 def github_diff_anchors(source_url: str, files: list[dict[str, Any]]) -> dict[str, str]:
     """Return GitHub PR file anchors keyed by the post-change path."""
-    changes_url = github_pr_changes_url(source_url)
-    if not changes_url:
+    files_url = github_pr_files_url(source_url)
+    if not files_url:
         return {}
     return {
-        item["path"]: f"{changes_url}#diff-{hashlib.sha256(item['path'].encode('utf-8')).hexdigest()}"
+        item["path"]: f"{files_url}#diff-{hashlib.sha256(item['path'].encode('utf-8')).hexdigest()}"
         for item in files
     }
 
@@ -169,6 +169,17 @@ def validate_spec(spec: dict[str, Any], diff: dict[str, Any]) -> dict[str, Any]:
     matrix = require_list(spec.get("test_matrix", []), "test_matrix")
     references = require_list(spec.get("references", []), "references")
     code_blocks = require_list(spec.get("code_blocks", []), "code_blocks")
+    collapsed_files = require_list(spec.get("github_collapsed_files", []), "github_collapsed_files")
+
+    changed_paths = {item["path"] for item in diff["files"]}
+    seen_collapsed: set[str] = set()
+    for index, file_path in enumerate(collapsed_files):
+        path = require_string(file_path, f"github_collapsed_files[{index}]")
+        if path not in changed_paths:
+            raise ReviewError(f"github_collapsed_files[{index}] references unchanged path {path!r}")
+        if path in seen_collapsed:
+            raise ReviewError(f"github_collapsed_files contains duplicate path {path!r}")
+        seen_collapsed.add(path)
 
     ids = {
         "review-summary",
@@ -330,12 +341,13 @@ def validate_spec(spec: dict[str, Any], diff: dict[str, Any]) -> dict[str, Any]:
     normalized.setdefault("agent_prompt", "")
     normalized.setdefault("validation_note", "")
     normalized.setdefault("code_blocks", [])
+    normalized.setdefault("github_collapsed_files", [])
     normalized["derived"] = {
         "changed_files": diff["changed_files"],
         "additions": diff["additions"],
         "deletions": diff["deletions"],
         "files": diff["files"],
-        "github_changes_url": github_pr_changes_url(normalized["source_url"]),
+        "github_files_url": github_pr_files_url(normalized["source_url"]),
         "github_diff_anchors": github_diff_anchors(normalized["source_url"], diff["files"]),
     }
     return normalized

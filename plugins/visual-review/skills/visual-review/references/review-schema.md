@@ -11,6 +11,7 @@ The renderer accepts one UTF-8 JSON object. Only `title` and `findings` are requ
   "subtitle": "main ← feature · commit abc123",
   "source_url": "https://github.com/org/repo/pull/123/files",
   "revision": "abc123",
+  "github_collapsed_files": ["path/to/large-diff.go"],
   "status": "2 findings",
   "summary": "One-sentence review outcome.",
   "scope": {
@@ -29,11 +30,17 @@ The renderer accepts one UTF-8 JSON object. Only `title` and `findings` are requ
 ```
 
 For a GitHub pull request, set `source_url` to the PR, `/files`, or `/changes`
-page. The renderer normalizes direct review links to GitHub's `/changes` view.
+page. The renderer normalizes direct review links to GitHub's `/files` view.
 The renderer derives each changed file's GitHub `diff-<sha256(path)>` anchor and
 the corresponding `L<line>` or `R<line>` target. The dashboard uses these for
 hover `+` buttons and direct links from findings, cases, annotations, and file
 headers. Other source providers retain the generic source link.
+
+List a changed path in `github_collapsed_files` when GitHub initially renders
+that file behind `Load diff` (including large or generated diffs). GitHub has
+not created its `L`/`R` line elements at that point, so the dashboard links to
+the existing file anchor and tells the reviewer to load the diff and then use
+the named old/new line. Do not emit a knowingly dead exact-line anchor.
 
 ## Findings
 
