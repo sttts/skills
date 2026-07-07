@@ -1,8 +1,8 @@
-# Skills for Claude Code
+# Skills for Claude Code and Codex
 
-Claude Code skills for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, and cmux Codex subagents.
+Plugins for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, cmux Codex subagents, and visual pull request reviews.
 
-## Installation
+## Claude Code installation
 
 ```bash
 # Add the marketplace
@@ -15,7 +15,22 @@ Claude Code skills for local issue tracking with [beads](https://github.com/sttt
 /plugin install sttts-cmux-codex
 ```
 
+## Codex installation
+
+```bash
+codex plugin marketplace add sttts/skills
+codex plugin add visual-review@sttts-skills
+```
+
 ## Plugins
+
+### visual-review
+
+Create portable interactive HTML dashboards for deep pull request reviews. The dashboard includes the complete diff, line-linked findings and validation cases, reference evidence, risk heatmaps, 10,000-foot code summaries, logical flows, and a reusable fix prompt.
+
+**Triggers on:** visual PR reviews, interactive review dashboards, GitHub-style annotated diffs, risk heatmaps, or requests to explain a pull request visually
+
+**Codex only.**
 
 ### sttts-beads
 
