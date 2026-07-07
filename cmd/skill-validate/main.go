@@ -121,10 +121,18 @@ func main() {
 		}
 		pluginName := entry.Name()
 		pluginDir := filepath.Join(pluginsDir, pluginName)
-		logInfo("Validating plugin: %s", pluginName)
 
 		// check plugin.json
 		pluginJSONPath := filepath.Join(pluginDir, ".claude-plugin", "plugin.json")
+		if _, err := os.Stat(pluginJSONPath); os.IsNotExist(err) {
+			codexPluginJSONPath := filepath.Join(pluginDir, ".codex-plugin", "plugin.json")
+			if _, codexErr := os.Stat(codexPluginJSONPath); codexErr == nil {
+				logInfo("Skipping Codex-only plugin: %s", pluginName)
+				continue
+			}
+		}
+
+		logInfo("Validating plugin: %s", pluginName)
 		var plugin PluginJSON
 		if err := readJSON(pluginJSONPath, &plugin); err != nil {
 			logError("%s: %v", pluginJSONPath, err)
