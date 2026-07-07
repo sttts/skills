@@ -27,13 +27,17 @@ python3 <skill-dir>/scripts/render_review.py \
 
    Resolve `<workspace-artifact-dir>` inside the active Codex workspace, not inside a temporary review worktree. Prefer a writable, VCS-ignored `.codex/reviews/`; otherwise use a writable, VCS-ignored workspace directory such as `tmp/codex-reviews/`. Confirm the chosen directory with `git check-ignore` when the workspace uses Git. The renderer creates the output directory when needed.
 6. Re-run with `--validate-only` after edits. If a local headless browser exists, inspect the rendered page; otherwise rely on the renderer's structural, anchor, and annotation validation.
-7. Return only a clickable Markdown file link to the workspace-local HTML artifact. Link the bare absolute `.html` path with no `#fragment`; Codex workspace file links with URL fragments may fail to open. Internal anchors remain available after the HTML file is open. Never hand off a final review from `/tmp`, `$TMPDIR`, `~/Library/Caches`, or any path outside the active workspace; those locations are temporary working storage only.
+7. Return a clickable Markdown file link to the workspace-local HTML artifact, followed by a fenced `markdown` code block containing a copy-ready text version of every finding. Link the bare absolute `.html` path with no `#fragment`; Codex workspace file links with URL fragments may fail to open. Internal anchors remain available after the HTML file is open. Never hand off a final review from `/tmp`, `$TMPDIR`, `~/Library/Caches`, or any path outside the active workspace; those locations are temporary working storage only.
+   - Keep the findings in severity order and include severity, title, exact `file:line`, and the complete evidence-based explanation.
+   - Emit only findings in this block, not scope boundaries, validation cases, logical flows, or implementation notes.
+   - Emit the fenced block even when there are no findings; use `No findings.` as its content.
 
 ## Review contract
 
 - Include the complete diff with old/new line numbers and GitHub-style red/green rows.
 - Anchor each actionable finding to an exact changed line. Do not label the requested implementation itself as an additional finding; distinguish known scope from newly found defects.
 - Render a findings overview immediately after the summary. Show severity, title, explanation, and a direct link to the annotated code before scope, validation cases, or logical flows.
+- Always duplicate the final findings in the chat response as a fenced `markdown` code block so the reviewer can paste them into another review surface without opening the dashboard.
 - Keep dashboard concepts explicit and separate: findings are defects or risks; scope states review boundaries; validation cases describe how to prove behavior; logical flows explain multi-location causality. Never present these as peer lists without labels.
 - Link multi-step behavior through flow cards and reference snippets when the bug crosses three or more locations.
 - Keep logical flows in the main content only. Do not duplicate them as sidebar navigation.
