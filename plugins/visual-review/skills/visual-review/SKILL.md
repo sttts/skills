@@ -43,6 +43,7 @@ python3 <skill-dir>/scripts/render_review.py \
 - Use the minimap for changed files, important callers/types/tests, and explicit out-of-scope areas.
 - Define larger logical diff ranges once in `code_blocks`. Use `high`/red for code that must be inspected, `medium`/yellow for code worth a look, and `low`/green for routine changes. Render the heat as a 5 px bar at the far left of the number gutters; do not recolor the number or code backgrounds, because those already encode diff semantics.
 - Render a right-side 10,000-foot rail beside each file diff from the same `code_blocks` data. Align one concise sentence with the start of each larger block; explain what the block does and avoid line-by-line narration or repeating findings.
+- Keep file diffs in the page's single vertical scroll flow. Allow horizontal overflow for long code, but explicitly hide vertical overflow on that horizontal scroller so browser overflow-axis normalization cannot create a tiny nested vertical scroll area that captures wheel input.
 - State what is in scope and out of scope when ownership spans multiple PRs.
 - Make the agent fix prompt short. Include only non-obvious task constraints, behavior, and tests; do not repeat repository instructions that the agent will load from `AGENTS.md` or equivalent files.
 - Report tests as unrun unless they were actually executed.
