@@ -1,7 +1,7 @@
 ---
 name: prompt-recording
 description: "Record prompts to git notes and MR/PR descriptions. Triggers on 'record prompt', 'prompt recording', 'log prompts'."
-version: 0.2.6
+version: 0.2.7
 ---
 
 # Prompt Recording
