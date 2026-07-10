@@ -26,7 +26,7 @@ codex plugin add visual-review@sttts-skills
 
 ### visual-review
 
-Create portable interactive HTML dashboards for deep pull request reviews. The dashboard includes the complete diff, line-linked findings and validation cases, reference evidence, risk heatmaps, 10,000-foot code summaries, logical flows, and a reusable fix prompt.
+Create self-contained interactive HTML dashboards for deep pull request reviews. The dashboard includes correctness and safe-to-merge scores, code-smell indicators, interactive information-flow and finding diagrams, structured finding packages, API manifests, expandable full-context diffs, line-linked evidence, and per-finding fix prompts. Vendored graph libraries keep the artifact portable and offline-capable.
 
 **Triggers on:** visual PR reviews, interactive review dashboards, GitHub-style annotated diffs, risk heatmaps, or requests to explain a pull request visually
 

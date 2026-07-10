@@ -1,7 +1,7 @@
 {
   "name": "visual-review",
-  "version": "0.1.0",
-  "description": "Create interactive HTML dashboards for deep pull request reviews",
+  "version": "0.2.0",
+  "description": "Create self-contained interactive HTML dashboards for deep code reviews",
   "author": {
     "name": "Stefan Schimanski",
     "url": "https://github.com/sttts"
@@ -13,8 +13,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Visual Review",
-    "shortDescription": "Build interactive visual code review dashboards",
-    "longDescription": "Deeply review pull requests and render the complete diff, findings, evidence, risk heatmap, logical flows, and fix guidance as a portable interactive HTML dashboard.",
+    "shortDescription": "Build interactive code reviews with diagrams",
+    "longDescription": "Deeply review pull requests and render correctness and safe-to-merge scores, interactive diagrams, structured evidence, API manifests, expandable full-context diffs, and fix prompts in one portable HTML dashboard.",
     "developerName": "Stefan Schimanski",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
