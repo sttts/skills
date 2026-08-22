@@ -1,7 +1,7 @@
 ---
 name: visualize-slide
 description: Create a single, self-contained technical presentation slide in a dense Excalidraw-style hand-drawn visual language. Use for visual explanations of mechanisms, architectures, data flows, algorithms, mathematical ideas, or technical narratives. Match the bundled PNG style references and prioritize technical correctness over visual symmetry.
-version: 0.2.8
+version: 0.2.9
 ---
 
 # Visualize Slide

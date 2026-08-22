@@ -1,7 +1,7 @@
 ---
 name: worktree-workflow
 description: "Opinionated worktree workflow with .git/checkouts convention. Load explicitly with /worktree-workflow."
-version: 0.2.8
+version: 0.2.9
 user_invocable: true
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: visualize-poster
 description: Create an extremely dense technical poster in a structured Excalidraw-style hand-drawn visual language. Use for one-page system maps, architecture posters, deep technical overviews, request/data/control-path explainers, and visual cheat sheets where preserving detail matters more than minimalism. Match the bundled PNG style reference.
-version: 0.2.8
+version: 0.2.9
 ---
 
 # Visualize Poster

@@ -10,7 +10,7 @@
     {
       "name": "sttts-beads",
       "description": "Beads issue tracking workflow integration for Claude Code",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
@@ -22,7 +22,7 @@
     {
       "name": "sttts-worktree",
       "description": "Git worktree management for Claude Code",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
@@ -34,7 +34,7 @@
     {
       "name": "sttts-prompt-recording",
       "description": "Record prompts to git notes and MR/PR descriptions",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
@@ -46,7 +46,7 @@
     {
       "name": "sttts-tilt",
       "description": "Tilt local development and e2e testing for Claude Code",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
@@ -58,7 +58,7 @@
     {
       "name": "sttts-cmux-codex",
       "description": "Launch and manage Codex cmux subagents",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
@@ -70,7 +70,7 @@
     {
       "name": "sttts-visualize",
       "description": "Create technically precise Excalidraw-style slides and dense technical posters",
-      "version": "0.2.8",
+      "version": "0.2.9",
       "author": {
         "name": "Stefan Schimanski",
         "url": "https://github.com/sttts"
