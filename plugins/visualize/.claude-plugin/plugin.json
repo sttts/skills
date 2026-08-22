@@ -1,0 +1,9 @@
+{
+  "name": "sttts-visualize",
+  "description": "Create technically precise Excalidraw-style slides and dense technical posters",
+  "version": "0.2.8",
+  "author": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  }
+}

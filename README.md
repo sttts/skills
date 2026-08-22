@@ -1,6 +1,6 @@
 # Skills for Claude Code and Codex
 
-Plugins for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, cmux Codex subagents, and visual pull request reviews.
+Plugins for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, cmux Codex subagents, visual pull request reviews, and technical visualizations.
 
 ## Claude Code installation
 
@@ -13,6 +13,7 @@ Plugins for local issue tracking with [beads](https://github.com/sttts/beads), g
 /plugin install sttts-worktree
 /plugin install sttts-prompt-recording
 /plugin install sttts-cmux-codex
+/plugin install sttts-visualize
 ```
 
 ## Codex installation
@@ -20,9 +21,23 @@ Plugins for local issue tracking with [beads](https://github.com/sttts/beads), g
 ```bash
 codex plugin marketplace add sttts/skills
 codex plugin add visual-review@sttts-skills
+codex plugin add visualize@sttts-skills
 ```
 
 ## Plugins
+
+### sttts-visualize / visualize
+
+Create technically precise, Excalidraw-style visual explanations as a single image. The plugin includes two skills:
+
+- `visualize-slide` for 16:9 presentation slides explaining concepts, mechanisms, architectures, data flows, algorithms, and technical narratives
+- `visualize-poster` for dense one-page system maps, architecture posters, technical overviews, and visual cheat sheets
+
+Both skills prioritize correct topology, ordering, direction, causality, and meaningful connectors over decorative symmetry. Bundled PNG references ground the generated visuals in a consistent hand-drawn style.
+
+**Triggers on:** requests for Excalidraw-style technical slides, dense technical posters, architecture explainers, system maps, or visual cheat sheets
+
+**Available for Claude Code and Codex.**
 
 ### visual-review
 
