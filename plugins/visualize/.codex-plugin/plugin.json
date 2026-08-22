@@ -1,0 +1,27 @@
+{
+  "name": "visualize",
+  "version": "0.1.0",
+  "description": "Create technically precise Excalidraw-style slides and dense technical posters",
+  "author": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  },
+  "homepage": "https://github.com/sttts/skills",
+  "repository": "https://github.com/sttts/skills",
+  "license": "MIT",
+  "keywords": ["visualization", "slides", "poster", "excalidraw", "technical-diagrams"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Visualize",
+    "shortDescription": "Create Excalidraw-style technical visuals",
+    "longDescription": "Turn technical concepts, mechanisms, architectures, and systems into precise Excalidraw-style presentation slides or extremely dense poster-like explainers.",
+    "developerName": "Stefan Schimanski",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/sttts/skills",
+    "defaultPrompt": [
+      "Use $visualize-slide to turn this technical concept into one Excalidraw-style presentation slide.",
+      "Use $visualize-poster to turn this system into one dense Excalidraw-style technical poster."
+    ]
+  }
+}
