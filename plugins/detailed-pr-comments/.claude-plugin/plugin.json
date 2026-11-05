@@ -1,0 +1,9 @@
+{
+  "name": "sttts-detailed-pr-comments",
+  "description": "Write detailed inline PR review comments with evidence, focused fixes, and regression coverage",
+  "version": "0.2.9",
+  "author": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  }
+}
