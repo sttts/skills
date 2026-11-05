@@ -1,7 +1,7 @@
 ---
 name: detailed-pr-comments
 description: Create detailed PR review comments when the user asks to "comment on the line", "post this inline", "poste das an die Zeile", or leave a detailed comment on the relevant changed line. Do not use for review-only analysis or short comments.
-version: 0.2.9
+version: 0.2.10
 ---
 
 # Detailed PR Comments
