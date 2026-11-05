@@ -1,0 +1,32 @@
+{
+  "name": "detailed-pr-comments",
+  "version": "0.1.0",
+  "description": "Write detailed inline PR review comments with evidence, focused fixes, and regression coverage",
+  "author": {
+    "name": "Stefan Schimanski",
+    "url": "https://github.com/sttts"
+  },
+  "homepage": "https://github.com/sttts/skills",
+  "repository": "https://github.com/sttts/skills",
+  "license": "MIT",
+  "keywords": [
+    "code-review",
+    "pull-request",
+    "inline-comments"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Detailed PR Comments",
+    "shortDescription": "Write detailed comments on changed PR lines",
+    "longDescription": "Explain the trigger, failure path, impact, focused fix, and regression coverage inline on the relevant changed line. Publish only when explicitly requested; otherwise return a draft.",
+    "developerName": "Stefan Schimanski",
+    "category": "Productivity",
+    "capabilities": [
+      "Write"
+    ],
+    "websiteURL": "https://github.com/sttts/skills",
+    "defaultPrompt": [
+      "Use $detailed-pr-comments to post a detailed inline comment on the relevant changed line."
+    ]
+  }
+}

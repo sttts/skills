@@ -1,6 +1,6 @@
 # Skills for Claude Code and Codex
 
-Plugins for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, cmux Codex subagents, visual pull request reviews, and technical visualizations.
+Plugins for local issue tracking with [beads](https://github.com/sttts/beads), git worktree management, prompt recording, cmux Codex subagents, visual pull request reviews, detailed inline review comments, and technical visualizations.
 
 ## Claude Code installation
 
@@ -14,6 +14,7 @@ Plugins for local issue tracking with [beads](https://github.com/sttts/beads), g
 /plugin install sttts-prompt-recording
 /plugin install sttts-cmux-codex
 /plugin install sttts-visualize
+/plugin install sttts-detailed-pr-comments
 ```
 
 ## Codex installation
@@ -22,9 +23,20 @@ Plugins for local issue tracking with [beads](https://github.com/sttts/beads), g
 codex plugin marketplace add sttts/skills
 codex plugin add visual-review@sttts-skills
 codex plugin add visualize@sttts-skills
+codex plugin add detailed-pr-comments@sttts-skills
 ```
 
 ## Plugins
+
+### sttts-detailed-pr-comments / detailed-pr-comments
+
+Write detailed PR review comments on the most relevant changed line. Include the trigger, failure path, impact, focused examples, a small illustrative fix when applicable, and regression coverage. Keep the full reasoning visible instead of hiding it in collapsed sections.
+
+**Triggers on:** requests to comment on the line, post feedback inline, or leave a detailed comment on a relevant changed line
+
+Publishing requires an explicit user request; otherwise the skill returns a draft.
+
+**Available for Claude Code and Codex.**
 
 ### sttts-visualize / visualize
 
