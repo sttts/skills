@@ -1,7 +1,7 @@
 ---
 name: visualize-poster
 description: Create a large, detailed technical poster in the hand-drawn style of visualize-slide. Use for multi-topic explanations, system maps, worked mechanisms, and visual reference sheets.
-version: 0.2.10
+version: 0.2.11
 ---
 
 # Visualize Poster
