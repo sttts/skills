@@ -45,7 +45,9 @@ Create technically precise, Excalidraw-style visual explanations as a single ima
 - `visualize-slide` for 16:9 presentation slides explaining concepts, mechanisms, architectures, data flows, algorithms, and technical narratives
 - `visualize-poster` for dense one-page system maps, architecture posters, technical overviews, and visual cheat sheets
 
-Both skills prioritize correct topology, ordering, direction, causality, and meaningful connectors over decorative symmetry. Bundled PNG references ground the generated visuals in a consistent hand-drawn style.
+Both skills prioritize correct topology, ordering, direction, causality, and meaningful connectors over decorative symmetry. The poster inherits the slide guide and its three visual examples. Its own reference image guides the composition of larger, multi-topic explanations. Both skills ship together in the plugin.
+
+For a standalone poster skill, run `make package-visualize-poster` and extract `bin/visualize-poster.tar.gz` into your skills directory. The archive includes the slide guide and reference images from the same revision.
 
 **Triggers on:** requests for Excalidraw-style technical slides, dense technical posters, architecture explainers, system maps, or visual cheat sheets
 
